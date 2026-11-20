@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Node 26 no longer bundles Corepack
+      - name: Enable Yarn via Corepack
+        run: |
+          npm i -g corepack
+          corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint (oxlint)
+        run: yarn oxlint .
+
+      - name: Lint (eslint)
+        run: yarn eslint .
+
+      - name: Unit tests
+        run: yarn vitest run
+
+      - name: Build
+        run: yarn build
