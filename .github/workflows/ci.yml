@@ -43,3 +43,6 @@ jobs:
 
       - name: Build
         run: yarn build
+
+      - name: Build Docker image
+        run: docker build -t yarn-node-26-ga .

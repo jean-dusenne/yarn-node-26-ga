@@ -43,6 +43,23 @@ yarn config set nodeLinker node-modules   # writes .yarnrc.yml
 
 `nodeLinker: node-modules` is used instead of the default Plug'n'Play, whose ESM support is experimental and not well supported by Vite, Vitest and IDE tooling.
 
+### Alternatives to Corepack
+
+Corepack is the approach recommended by Yarn, and the one used here (locally, in CI and in Docker). Other options exist to get Yarn Berry on Node 26:
+
+- **`@yarnpkg/cli-dist`**: `npm install -g @yarnpkg/cli-dist@<version>` installs Yarn directly, with no Corepack. The version can be read from `packageManager` with `node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]"`. Simple, but the global install can conflict with a Corepack-managed `yarn` binary.
+- **Committed release (`yarnPath`)**: `yarn set version stable --yarn-path` stores the Yarn binary in `.yarn/releases/` and references it from `.yarnrc.yml`. No global install needed beyond Node (`node .yarn/releases/yarn-<version>.cjs`), but it adds a ~3 MB file to the repository and requires un-ignoring `.yarn/releases` (already allowed in `.gitignore`).
+- **Another Node version**: Node 24 and below still bundle Corepack, so only `corepack enable` is needed. This defeats the purpose of targeting Node 26.
+
+### Docker
+
+The [Dockerfile](./Dockerfile) builds the app on `node:26-alpine` and serves `dist/` with nginx (with an SPA fallback, see [nginx.conf](./nginx.conf)). Since Node 26 images have no Corepack, so the Dockerfile installs it (`npm install -g corepack && corepack enable`); Yarn is then resolved from `packageManager` in `package.json`, as in CI.
+
+```sh
+docker build -t yarn-node-26-ga .
+docker run --rm -p 8080:80 yarn-node-26-ga
+```
+
 ## Project Setup
 
 ```sh
